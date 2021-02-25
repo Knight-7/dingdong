@@ -1,6 +1,6 @@
 # project parameters
-APP_NAME =
-SOURCE_FILE_DIR =
+APP_NAME = web
+SOURCE_FILE_DIR = ./handler/web
 BUILD_DIR = $(shell pwd)/build
 
 # go go source packages and files
@@ -66,6 +66,7 @@ misspell:
 	misspell -w $(GOFILES)
 	@echo "---- Word misspell Successfully ----\n"
 
+.PHONY: misspell-check
 misspell-check:
 	@echo "---- Initialize word misspell-check ----"
 	@hash misspell > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
@@ -82,8 +83,8 @@ go-tools: ## install go tools
 	@echo "---- Go tools install Successfully ----\n"
 
 .PHONY: build
-build: validate-go-version fmt-check lint clean
-	@echo "---- Building app ----"
+build: validate-go-version
+	@echo "---- Building $(APP_NAME) ----"
 ifdef FLAG
 	go build -o $(BUILD_DIR)/$(APP_NAME) $(FLAG) $(SOURCE_FILE_DIR)/*.go
 else
@@ -101,9 +102,12 @@ test: fmt-check ## unit test
 	@for f in $(TESTFILES); do go test -count=1 -v -cover -p 1 $$f; done
 	@echo "---- Successfully Tested ----\n"
 
+.PHONY: docker
 docker:
+	@echo "---- Docker build FOR $(APP_NAME) ----"
 ifdef DOCKER_TAG
-	docker build -t $(APP_NAME):$(DOCKER_TAG) .
+	docker build -t $(APP_NAME):$(DOCKER_TAG) . && docker push $(APP_NAME):$(DOCKER_TAG)
 else
-	docker build -t $(APP_NAME):latest .
+	docker build -t $(APP_NAME):latest . && docker push $(APP_NAME):latest
 endif
+	@echo "---- Successfully Docker build FOR $(APP_NAME) ----\n"
