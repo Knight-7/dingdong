@@ -1,9 +1,9 @@
-# 项目的一些参数放在这里
-APP_NAME = Greeter
-SOURCE_FILE_DIR = ./handler/hello
+# project parameters
+APP_NAME =
+SOURCE_FILE_DIR =
 BUILD_DIR = $(shell pwd)/build
 
-# go 源文件参数
+# go go source packages and files
 GOFILES := $(shell find . -name "*.go" | grep -v vendor)
 TESTFILES := $(shell find . -name "*_test.go" | grep -v vendor)
 GOPACKAGES ?= $(shell go list ./...)
@@ -17,7 +17,7 @@ MINIMUM_SUPPORTED_GO_MINOR_VERSION= 13
 GO_VERSION_VALIDATION_ERR_MSG = Golang version is not supported, please update to at least $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION).$(MINIMUM_SUPPORTED_GO_MINOR_VERSION)
 
 .PHONY: validate-go-version
-validate-go-version: ## go 版本检测
+validate-go-version:
 	@if [ $(GO_MAJOR_VERSION) -gt $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION) ]; then \
 		exit 0 ;\
 	elif [ $(GO_MAJOR_VERSION) -lt $(MINIMUM_SUPPORTED_GO_MAJOR_VERSION) ]; then \
@@ -29,24 +29,24 @@ validate-go-version: ## go 版本检测
 	fi
 
 .PHONY: fmt
-fmt: ## 格式化代码
+fmt:
 	@echo "---- Format Golang Code ----"
 	gofmt -w $(GOFILES)
 	@echo "---- Format Golang Code Successfully ----\n"
 
 .PHONY: fmt-check
-fmt-check: ## 代码规范检查
+fmt-check:
 	@echo "---- Check Golang Code In Good Format ----"
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null | grep -v bindata.go | grep -v ??)),)
 	git diff --exit-code
 endif
-	@echo "---- Check Golang Code In Good Format Successfully ----\n"
+	@echo "---- Successfully Check Golang Code In Good Format ----\n"
 
 .PHONY: vet
-vet: validate-go-version ## 代码的静态错误检查
+vet: validate-go-version
 	@echo "---- Initialize Go Vet ----"
 	go vet $(GOPACKAGES)
-	@echo "---- Go Vet Successfully ----\n"
+	@echo "---- Successfully Initialize Go Vet ----\n"
 
 .PHONY: lint
 lint:
@@ -55,7 +55,7 @@ lint:
 		$(GO) get -u golang.org/x/lint/golint; \
 	fi
 	for PKG in $(GOPACKAGES); do golint -set_exit_status $$PKG || exit 1; done;
-	@echo "---- Go lint Successfully ----\n"
+	@echo "---- Successfully Go lint ----\n"
 
 .PHONY: misspell
 misspell:
@@ -82,9 +82,13 @@ go-tools: ## install go tools
 	@echo "---- Go tools install Successfully ----\n"
 
 .PHONY: build
-build: clean
+build: validate-go-version fmt-check lint clean
 	@echo "---- Building app ----"
+ifdef FLAG
+	go build -o $(BUILD_DIR)/$(APP_NAME) $(FLAG) $(SOURCE_FILE_DIR)/*.go
+else
 	go build -o $(BUILD_DIR)/$(APP_NAME) $(SOURCE_FILE_DIR)/*.go
+endif
 	@echo "---- Build app Successfully ----\n"
 
 .PHONY: clean
@@ -98,4 +102,8 @@ test: fmt-check ## unit test
 	@echo "---- Successfully Tested ----\n"
 
 docker:
-	# 一个编译镜像+一个运行镜像
+ifdef DOCKER_TAG
+	docker build -t $(APP_NAME):$(DOCKER_TAG) .
+else
+	docker build -t $(APP_NAME):latest .
+endif
