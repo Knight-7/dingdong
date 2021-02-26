@@ -1,12 +1,17 @@
 # project parameters
-APP_NAME = web
-SOURCE_FILE_DIR = ./handler/web
+APP = holdon
+IMG = holdon:v1
 BUILD_DIR = $(shell pwd)/build
+COMMIT= $(shell git rev-parse --short HEAD)
+ifndef VER
+	VER = dev
+endif
 
-# go go source packages and files
+# go source packages and files
 GOFILES := $(shell find . -name "*.go" | grep -v vendor)
 TESTFILES := $(shell find . -name "*_test.go" | grep -v vendor)
-GOPACKAGES ?= $(shell go list ./...)
+GOPACKAGES := $(shell go list ./...)
+SOURCEFILE := $(shell ls ./cmd)
 
 ##@ Golang
 
@@ -50,28 +55,19 @@ vet: validate-go-version
 
 .PHONY: lint
 lint:
-	@echo "---- Initialize Go lint----"
-	@hash golint > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		$(GO) get -u golang.org/x/lint/golint; \
-	fi
+	@echo "---- Initialize Go lint ----"
 	for PKG in $(GOPACKAGES); do golint -set_exit_status $$PKG || exit 1; done;
 	@echo "---- Successfully Go lint ----\n"
 
 .PHONY: misspell
 misspell:
 	@echo "---- Initialize word misspell ----"
-	@hash misspell > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		go get -u github.com/client9/misspell/cmd/misspell; \
-	fi
 	misspell -w $(GOFILES)
 	@echo "---- Word misspell Successfully ----\n"
 
 .PHONY: misspell-check
 misspell-check:
 	@echo "---- Initialize word misspell-check ----"
-	@hash misspell > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		go get -u github.com/client9/misspell/cmd/misspell; \
-	fi
 	misspell -error $(GOFILES)
 	@echo "---- Word misspell-check Successfully ----\n"
 
@@ -84,11 +80,13 @@ go-tools: ## install go tools
 
 .PHONY: build
 build: validate-go-version
-	@echo "---- Building $(APP_NAME) ----"
-ifdef FLAG
-	go build -o $(BUILD_DIR)/$(APP_NAME) $(FLAG) $(SOURCE_FILE_DIR)/*.go
+	@echo "---- Building APP ----"
+ifdef WHAT
+	./build.sh $(WHAT) $(VER) $(COMMIT)
 else
-	go build -o $(BUILD_DIR)/$(APP_NAME) $(SOURCE_FILE_DIR)/*.go
+	for pkg in $(SOURCEFILE); \
+	do go build -ldflags "-X main.VERSION=$(VER) -X main.COMMIT=$(COMMIT)" \
+		-o $(BUILD_DIR) ./cmd/$$pkg/*.go; done
 endif
 	@echo "---- Build app Successfully ----\n"
 
@@ -99,15 +97,15 @@ clean:
 .PHONY: test
 test: fmt-check ## unit test
 	@echo "---- Do Testing Framework ----"
+ifdef FLAG
+	@for f in $(TESTFILES); do go test $(FLAG) $$f; done
+else
 	@for f in $(TESTFILES); do go test -count=1 -v -cover -p 1 $$f; done
+endif
 	@echo "---- Successfully Tested ----\n"
 
 .PHONY: docker
 docker:
-	@echo "---- Docker build FOR $(APP_NAME) ----"
-ifdef DOCKER_TAG
-	docker build -t $(APP_NAME):$(DOCKER_TAG) . && docker push $(APP_NAME):$(DOCKER_TAG)
-else
-	docker build -t $(APP_NAME):latest . && docker push $(APP_NAME):latest
-endif
-	@echo "---- Successfully Docker build FOR $(APP_NAME) ----\n"
+	@echo "---- Docker build FOR $(IMG) ----"
+	docker build --build-arg APP=$(APP) -t $(IMG) . #&& docker push $(IMG)
+	@echo "---- Successfullu build $(IMG) ----"

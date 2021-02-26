@@ -2,13 +2,14 @@ package main
 
 import (
 	"github.com/micro/go-micro/v2"
+
+	"github.com/micro/go-micro/v2/registry/etcd"
 	"greeter/handler/hello/hellohandler"
 	hello "greeter/handler/hello/pb"
 	"greeter/pkg/config"
 	"log"
 
 	"github.com/micro/go-micro/v2/registry"
-	"github.com/micro/go-micro/v2/registry/etcd"
 )
 
 func main() {
@@ -23,7 +24,7 @@ func main() {
 	)
 	service.Init()
 
-	err := hello.RegisterGreeterHandler(service.Server(), hellohandler.NewGreterHandler(service.Client()))
+	err := hello.RegisterGreeterHandler(service.Server(), hellohandler.NewGreeterHandler(service.Client()))
 	if err != nil {
 		log.Fatalln("Regist GreeterHandler failed: ", err)
 	}

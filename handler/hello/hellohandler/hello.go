@@ -7,11 +7,13 @@ import (
 	user "greeter/handler/user/pb"
 )
 
+// GreeterHandler 是一个问候服务 demo
 type GreeterHandler struct {
 	UserClient user.UserService
 }
 
-func NewGreterHandler(c client.Client) *GreeterHandler {
+// NewGreeterHandler Get a new GreeterHandler
+func NewGreeterHandler(c client.Client) *GreeterHandler {
 	return &GreeterHandler{
 		UserClient: user.NewUserService("go.micro.srv.user", c),
 	}

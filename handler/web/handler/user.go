@@ -19,8 +19,8 @@ func GetUserHandler(c *gin.Context) {
 
 	helloClient := hello.NewGreeterService("go.micro.srv.hello", service.Client())
 
-	reqId, _ := strconv.Atoi(id)
-	rsp, err := helloClient.Hello(context.TODO(), &hello.HelloRequest{Id: int32(reqId)})
+	reqID, _ := strconv.Atoi(id)
+	rsp, err := helloClient.Hello(context.TODO(), &hello.HelloRequest{Id: int32(reqID)})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"errMsg": err.Error(),
