@@ -1,18 +1,19 @@
 package main
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/micro/go-micro/v2/registry"
 	"github.com/micro/go-micro/v2/registry/etcd"
 	"github.com/micro/go-micro/v2/web"
-	"greeter/handler/web/handler"
-	"greeter/pkg/config"
-	"log"
+
+	"dingdong/pkg/config"
 )
 
 func main() {
 	reg := etcd.NewRegistry(func(op *registry.Options) {
-		op.Addrs = config.Addrs
+		op.Addrs = config.Cfg.WebOpts.EtcdOps.Addrs
 	})
 
 	service := web.NewService(
@@ -26,7 +27,7 @@ func main() {
 	}
 
 	router := gin.Default()
-	router.GET("/hello/:id", handler.GetUserHandler)
+	router.GET("/hello/:id", nil)
 
 	service.Handle("/", router)
 

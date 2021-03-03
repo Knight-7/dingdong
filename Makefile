@@ -1,15 +1,13 @@
 # project parameters
-APP = holdon
-IMG = holdon:v1
+IMG = repo.upyun.com:5043/holdcloud/$(shell basename `pwd`)
+
+VER = dev
+TFLAG = -count=1 -v -cover -p 1
 BUILD_DIR = $(shell pwd)/build
 COMMIT= $(shell git rev-parse --short HEAD)
-ifndef VER
-	VER = dev
-endif
 
 # go source packages and files
 GOFILES := $(shell find . -name "*.go" | grep -v vendor)
-TESTFILES := $(shell find . -name "*_test.go" | grep -v vendor)
 GOPACKAGES := $(shell go list ./...)
 SOURCEFILE := $(shell ls ./cmd)
 
@@ -56,7 +54,7 @@ vet: validate-go-version
 .PHONY: lint
 lint:
 	@echo "---- Initialize Go lint ----"
-	for PKG in $(GOPACKAGES); do golint -set_exit_status $$PKG || exit 1; done;
+	for PKG in $(GOPACKAGES); do golint $$PKG || exit 1; done;
 	@echo "---- Successfully Go lint ----\n"
 
 .PHONY: misspell
@@ -78,16 +76,18 @@ go-tools: ## install go tools
 	go install github.com/client9/misspell/cmd/misspell;
 	@echo "---- Go tools install Successfully ----\n"
 
+.PHONY:
+check: misspell-check validate-go-version vet lint fmt-check
+
 .PHONY: build
 build: validate-go-version
 	@echo "---- Building APP ----"
 ifdef WHAT
-	./build.sh $(WHAT) $(VER) $(COMMIT)
-else
+	$(eval SOURCEFILE := $(shell echo $(WHAT) | sed 's/,/ /g'))
+endif
 	for pkg in $(SOURCEFILE); \
 	do go build -ldflags "-X main.VERSION=$(VER) -X main.COMMIT=$(COMMIT)" \
-		-o $(BUILD_DIR) ./cmd/$$pkg/*.go; done
-endif
+		-o $(BUILD_DIR)/$$pkg ./cmd/$$pkg/*.go; done
 	@echo "---- Build app Successfully ----\n"
 
 .PHONY: clean
@@ -95,17 +95,13 @@ clean:
 	@rm -rf $(BUILD_DIR)/*
 
 .PHONY: test
-test: fmt-check ## unit test
+test: validate-go-version
 	@echo "---- Do Testing Framework ----"
-ifdef FLAG
-	@for f in $(TESTFILES); do go test $(FLAG) $$f; done
-else
-	@for f in $(TESTFILES); do go test -count=1 -v -cover -p 1 $$f; done
-endif
+	go test $(TFLAG) ./...
 	@echo "---- Successfully Tested ----\n"
 
 .PHONY: docker
 docker:
 	@echo "---- Docker build FOR $(IMG) ----"
-	docker build --build-arg APP=$(APP) -t $(IMG) . #&& docker push $(IMG)
-	@echo "---- Successfullu build $(IMG) ----"
+	docker build --build-arg WHAT=$(WHAT) -t $(IMG):$(VER) . && docker push $(IMG):$(VER)
+	@echo "---- Successfully build $(IMG) ----"

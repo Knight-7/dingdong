@@ -1,0 +1,12 @@
+user:
+  name: go.micro.srv.user
+  version: latest
+  etcd:
+    addrs:
+      - "127.0.0.1:2379"
+web:
+  name: go.micro.api.dingdong
+  version: latest
+  etcd:
+    addrs:
+      - "127.0.0.1:2379"
